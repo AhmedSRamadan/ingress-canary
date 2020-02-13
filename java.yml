@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-java
+  labels:
+    app: my-app
+spec:
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+  selector:
+    app: my-app
+    version: my-app-java
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-java
+  labels:
+    app: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+      version: my-app-java
+  template:
+    metadata:
+      labels:
+        app: my-app
+        version: my-app-java
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9101"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: my-app
+        image: containersol/k8s-deployment-strategies
+        ports:
+        - name: http
+          containerPort: 8080
+        
+        env:
+        - name: VERSION
+          value: my-app-java
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          periodSeconds: 5

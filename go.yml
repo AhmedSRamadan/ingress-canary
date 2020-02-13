@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-go
+  labels:
+    app: my-app
+spec:
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+  selector:
+    app: my-app
+    version: my-app-go
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-go
+  labels:
+    app: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+      version: my-app-go
+  template:
+    metadata:
+      labels:
+        app: my-app
+        version: my-app-go
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9101"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: my-app
+        image: go image name
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: probe
+          containerPort: 8086
+        env:
+        - name: VERSION
+          value: my-app-go
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: probe
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: probe
+          periodSeconds: 5
